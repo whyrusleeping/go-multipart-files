@@ -61,31 +61,33 @@ func TestOutput(t *testing.T) {
 		t.Error("Expected filename to be \"boop\"")
 	}
 
+	part, err = mpReader.NextPart()
+	if part == nil || err != nil {
+		t.Error("Expected non-nil part, nil error")
+	}
+	mpf, err = NewFileFromPart(part)
+	if mpf.IsDirectory() {
+		t.Error("Expected file to not be a directory")
+	}
+	if mpf.FileName() != "boop/a.txt" {
+		t.Error("Expected filename to be \"some/file/path\"")
+	}
+
+	part, err = mpReader.NextPart()
+	if part == nil || err != nil {
+		t.Error("Expected non-nil part, nil error")
+	}
+	mpf, err = NewFileFromPart(part)
+	if mpf.IsDirectory() {
+		t.Error("Expected file to not be a directory")
+	}
+	if mpf.FileName() != "boop/b.txt" {
+		t.Error("Expected filename to be \"some/file/path\"")
+	}
+
 	child, err := mpf.NextFile()
-	if child == nil || err != nil {
-		t.Error("Expected to be able to read a child file")
-	}
-	if child.IsDirectory() {
-		t.Error("Expected file to not be a directory")
-	}
-	if child.FileName() != "boop/a.txt" {
-		t.Error("Expected filename to be \"some/file/path\"")
-	}
-
-	child, err = mpf.NextFile()
-	if child == nil || err != nil {
-		t.Error("Expected to be able to read a child file")
-	}
-	if child.IsDirectory() {
-		t.Error("Expected file to not be a directory")
-	}
-	if child.FileName() != "boop/b.txt" {
-		t.Error("Expected filename to be \"some/file/path\"")
-	}
-
-	child, err = mpf.NextFile()
-	if child != nil || err != io.EOF {
-		t.Error("Expected to get (nil, io.EOF)")
+	if child != nil || err != ErrNotDirectory {
+		t.Error("Expected a nil file and ErrNotDirectory")
 	}
 
 	part, err = mpReader.NextPart()

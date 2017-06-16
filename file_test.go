@@ -86,23 +86,14 @@ Some-Header: beep
 
 beep
 --Boundary!
-Content-Type: multipart/mixed; boundary=OtherBoundary
+Content-Type: application/x-directory
 Content-Disposition: file; filename="dir"
 
---OtherBoundary
+--Boundary!
 Content-Type: text/plain
-Content-Disposition: file; filename="some/file/path"
+Content-Disposition: file; filename="dir/file"
 
 test
---OtherBoundary
-Content-Type: text/plain
-
-boop
---OtherBoundary
-Content-Type: text/plain
-
-bloop
---OtherBoundary--
 --Boundary!--
 
 `
@@ -129,7 +120,7 @@ bloop
 	if file, err := mpf.NextFile(); file != nil || err != ErrNotDirectory {
 		t.Error("Expected a nil file and ErrNotDirectory")
 	}
-	if n, err := mpf.Read(buf); n != 4 || err != nil {
+	if n, err := mpf.Read(buf); n != 4 || err != io.EOF && err != nil {
 		t.Error("Expected to be able to read 4 bytes")
 	}
 	if err := mpf.Close(); err != nil {
@@ -159,35 +150,23 @@ bloop
 	}
 
 	// test properties of first child file
-	child, err := mpf.NextFile()
-	if child == nil || err != nil {
-		t.Error("Expected to be able to read a child file")
+	part, err = mpReader.NextPart()
+	if part == nil || err != nil {
+		t.Error("Expected non-nil part, nil error")
 	}
-	if child.IsDirectory() {
+	mpf, err = NewFileFromPart(part)
+	if mpf == nil || err != nil {
+		t.Error("Expected non-nil MultipartFile, nil error")
+	}
+	if mpf.IsDirectory() {
 		t.Error("Expected file to not be a directory")
 	}
-	if child.FileName() != "some/file/path" {
-		t.Error("Expected filename to be \"some/file/path\"")
-	}
-
-	// test processing files out of order
-	child, err = mpf.NextFile()
-	if child == nil || err != nil {
-		t.Error("Expected to be able to read a child file")
-	}
-	child2, err := mpf.NextFile()
-	if child == nil || err != nil {
-		t.Error("Expected to be able to read a child file")
-	}
-	if n, err := child2.Read(buf); n != 5 || err != nil {
-		t.Error("Expected to be able to read")
-	}
-	if n, err := child.Read(buf); n != 0 || err == nil {
-		t.Error("Expected to not be able to read after advancing NextFile() past this file")
+	if mpf.FileName() != "dir/file" {
+		t.Error("Expected filename to be \"dir/file\"")
 	}
 
 	// make sure the end is handled properly
-	child, err = mpf.NextFile()
+	child, err := mpf.NextFile()
 	if child != nil || err == nil {
 		t.Error("Expected NextFile to return (nil, EOF)")
 	}
