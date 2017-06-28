@@ -7,6 +7,7 @@ import (
 	"mime/multipart"
 	"net/textproto"
 	"net/url"
+	"path"
 	"sync"
 )
 
@@ -90,8 +91,10 @@ func (mfr *MultiFileReader) Read(buf []byte) (written int, err error) {
 
 			// write the boundary and headers
 			header := make(textproto.MIMEHeader)
-			filename := url.QueryEscape(file.FullPath())
-			header.Set("Content-Disposition", fmt.Sprintf("file; filename=\"%s\"", filename))
+			
+			baseDir := path.Base(mfr.files[0].FullPath())
+			relPath := url.QueryEscape(path.Join(baseDir, file.FileName()))
+			header.Set("Content-Disposition", fmt.Sprintf("file; filename=\"%s\"", relPath))
 			header.Set("Content-Type", contentType)
 
 			_, err := mfr.mpWriter.CreatePart(header)
